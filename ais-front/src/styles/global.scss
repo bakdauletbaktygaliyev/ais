@@ -1,0 +1,95 @@
+/* ============================================================
+   AIS Global Styles
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --color-bg: #0f0f13;
+    --color-surface: #1e1e2e;
+    --color-surface-2: #161620;
+    --color-border: #1e293b;
+    --color-border-2: #334155;
+    --color-text: #e2e8f0;
+    --color-text-muted: #94a3b8;
+    --color-text-dim: #64748b;
+    --color-primary: #6366f1;
+    --color-primary-2: #a78bfa;
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --font-mono: 'JetBrains Mono', 'Fira Mono', 'Consolas', monospace;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html,
+body {
+    height: 100%;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Focus */
+:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Links */
+a {
+    color: var(--color-primary-2);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Utility classes */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

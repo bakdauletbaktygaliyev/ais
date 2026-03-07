@@ -1,0 +1,42 @@
+# ── Environment ─────────────────────────────────────────────
+.env
+*.env.local
+
+# ── Go ───────────────────────────────────────────────────────
+ais-back/tmp/
+ais-back/vendor/
+ais-back/*.out
+ais-back/ais-back          # compiled binary
+
+# ── Python ───────────────────────────────────────────────────
+ais-ai/__pycache__/
+ais-ai/**/__pycache__/
+**/*.pyc
+ais-ai/.venv/
+ais-ai/*.egg-info/
+ais-ai/.pytest_cache/
+ais-ai/.coverage
+ais-ai/coverage.xml
+ais-ai/htmlcov/
+
+# ── Proto generated files ────────────────────────────────────
+ais-ai/src/proto/ai_pb2.py
+ais-ai/src/proto/ai_pb2_grpc.py
+
+# ── Node / Angular ───────────────────────────────────────────
+ais-front/node_modules/
+ais-front/dist/
+ais-front/.angular/
+
+# ── Docker ───────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── Clone temp dirs ──────────────────────────────────────────
+/tmp/ais/
+
+# ── IDE ──────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store

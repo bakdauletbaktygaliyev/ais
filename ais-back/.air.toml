@@ -1,0 +1,33 @@
+# Air - Live reload for Go apps
+# https://github.com/cosmtrek/air
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/ais-back ./cmd/server"
+  bin = "./tmp/ais-back"
+  full_bin = "./tmp/ais-back"
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "vendor", "testdata"]
+  exclude_file = []
+  exclude_regex = ["_test.go"]
+  exclude_unchanged = true
+  follow_symlink = false
+  log = "build-errors.log"
+  delay = 1000              # ms before rebuild
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = 500
+
+[log]
+  time = false
+
+[color]
+  main     = "magenta"
+  watcher  = "cyan"
+  build    = "yellow"
+  runner   = "green"
+
+[misc]
+  clean_on_exit = true

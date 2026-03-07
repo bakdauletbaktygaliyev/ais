@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package ai;
+
+option go_package = "github.com/bakdaulet/ais/ais-back/proto/ai";
+
+// AIService provides AI-powered repository analysis capabilities.
+service AIService {
+  // IndexRepository chunks all files, generates embeddings, stores in Qdrant.
+  rpc IndexRepository(IndexRequest) returns (IndexResponse);
+
+  // Chat performs RAG-based Q&A with streaming token response.
+  rpc Chat(ChatRequest) returns (stream ChatChunk);
+
+  // SearchSimilar finds semantically similar code chunks for a query.
+  rpc SearchSimilar(SearchRequest) returns (SearchResponse);
+}
+
+// ---------------------------------------------------------------------------
+// IndexRepository
+// ---------------------------------------------------------------------------
+
+message IndexRequest {
+  string repo_id = 1;
+  repeated FileContent files = 2;
+}
+
+message FileContent {
+  string path = 1;
+  string content = 2;
+  string language = 3;
+}
+
+message IndexResponse {
+  bool success = 1;
+  int32 chunks_indexed = 2;
+  string error = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Chat
+// ---------------------------------------------------------------------------
+
+message ChatRequest {
+  string repo_id = 1;
+  string message = 2;
+  string node_id = 3;
+  repeated ChatMessage history = 4;
+}
+
+message ChatMessage {
+  string role = 1;
+  string content = 2;
+}
+
+message ChatChunk {
+  string token = 1;
+  bool done = 2;
+  repeated FileRef references = 3;
+}
+
+message FileRef {
+  string file_path = 1;
+  int32 start_line = 2;
+  int32 end_line = 3;
+}
+
+// ---------------------------------------------------------------------------
+// SearchSimilar
+// ---------------------------------------------------------------------------
+
+message SearchRequest {
+  string repo_id = 1;
+  string query = 2;
+  int32 top_k = 3;
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+}
+
+message SearchResult {
+  string chunk_id = 1;
+  string file_path = 2;
+  string content = 3;
+  float score = 4;
+  int32 start_line = 5;
+  int32 end_line = 6;
+  string chunk_type = 7;
+  string name = 8;
+}

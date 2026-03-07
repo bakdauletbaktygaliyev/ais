@@ -1,0 +1,66 @@
+syntax = "proto3";
+package ai;
+
+service AIService {
+  rpc IndexRepository (IndexRequest) returns (IndexResponse);
+  rpc Chat (ChatRequest) returns (stream ChatChunk);
+  rpc SearchSimilar (SearchRequest) returns (SearchResponse);
+}
+
+message IndexRequest {
+  string repo_id = 1;
+  repeated FileContent files = 2;
+}
+
+message FileContent {
+  string path = 1;
+  string content = 2;
+  string language = 3;
+}
+
+message IndexResponse {
+  bool success = 1;
+  int32 chunks_indexed = 2;
+  string error = 3;
+}
+
+message ChatRequest {
+  string repo_id = 1;
+  string message = 2;
+  string node_id = 3;
+  repeated ChatMessage history = 4;
+}
+
+message ChatMessage {
+  string role = 1;
+  string content = 2;
+}
+
+message ChatChunk {
+  string token = 1;
+  bool done = 2;
+  repeated FileRef references = 3;
+}
+
+message FileRef {
+  string file_path = 1;
+  int32 start_line = 2;
+  int32 end_line = 3;
+}
+
+message SearchRequest {
+  string repo_id = 1;
+  string query = 2;
+  int32 top_k = 3;
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+}
+
+message SearchResult {
+  string chunk_id = 1;
+  string file_path = 2;
+  string content = 3;
+  float score = 4;
+}

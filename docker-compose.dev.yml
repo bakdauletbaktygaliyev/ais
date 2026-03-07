@@ -1,0 +1,36 @@
+version: "3.9"
+
+# ============================================================
+# Development overrides — use with:
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# ============================================================
+
+services:
+
+  ais-back:
+    build:
+      target: builder          # stop at build stage for faster rebuilds
+    volumes:
+      - ./ais-back:/app        # mount source for hot reload via air
+    command: ["air", "-c", ".air.toml"]
+    environment:
+      APP_ENV: development
+      LOG_FORMAT: console      # human-readable logs in dev
+
+  ais-ai:
+    volumes:
+      - ./ais-ai/src:/app/src  # mount source
+    environment:
+      LOG_LEVEL: DEBUG
+      LOG_FORMAT: console
+
+  ais-front:
+    # In dev, run ng serve directly instead of nginx
+    build:
+      context: ./ais-front
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./ais-front:/app
+      - /app/node_modules      # exclude node_modules from bind mount
