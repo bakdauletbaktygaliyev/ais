@@ -23,20 +23,20 @@ import (
 
 // UseCase orchestrates the full repository analysis pipeline.
 type UseCase struct {
-	repoRepo    domainrepo.RepoRepository
-	cacheRepo   domainrepo.CacheRepository
-	graphRepo   graph.GraphRepository
-	gitHubClient domainrepo.GitHubClient
-	cloner      analysis.Cloner
-	fsWalker    analysis.FSWalker
-	langDetector analysis.LangDetector
-	parser      analysis.Parser
-	aiClient    domainai.Client
-	cloneBase   string
-	skipDirs    []string
-	parseWorkers int
+	repoRepo         domainrepo.RepoRepository
+	cacheRepo        domainrepo.CacheRepository
+	graphRepo        graph.GraphRepository
+	gitHubClient     domainrepo.GitHubClient
+	cloner           analysis.Cloner
+	fsWalker         analysis.FSWalker
+	langDetector     analysis.LangDetector
+	parser           analysis.Parser
+	aiClient         domainai.Client
+	cloneBase        string
+	skipDirs         []string
+	parseWorkers     int
 	maxFileSizeBytes int64
-	log         *logger.Logger
+	log              *logger.Logger
 }
 
 // UseCaseConfig holds all dependencies for the analysis use case.
@@ -121,12 +121,12 @@ func (u *UseCase) StartAnalysis(
 			_ = u.repoRepo.Update(updateCtx, repo)
 
 			emitter.Emit(&analysis.ProgressEvent{
-				RepoID:  repoID,
-				Step:    analysis.StepError,
+				RepoID:   repoID,
+				Step:     analysis.StepError,
 				Progress: 0,
-				Message: "Analysis failed",
-				Error:   err.Error(),
-				At:      time.Now(),
+				Message:  "Analysis failed",
+				Error:    err.Error(),
+				At:       time.Now(),
 			})
 		}
 	}()
@@ -453,11 +453,11 @@ func (u *UseCase) walkAndBuildGraph(
 
 	// Root dir node
 	rootDirNode := &graph.GraphNode{
-		ID:       nodeID(repo.ID, "dir", "/"),
-		RepoID:   repo.ID,
-		Type:     graph.NodeTypeDir,
-		Name:     repo.Name,
-		Path:     "/",
+		ID:          nodeID(repo.ID, "dir", "/"),
+		RepoID:      repo.ID,
+		Type:        graph.NodeTypeDir,
+		Name:        repo.Name,
+		Path:        "/",
 		HasChildren: true,
 	}
 	dirNodes = append(dirNodes, rootDirNode)
@@ -489,11 +489,11 @@ func (u *UseCase) walkAndBuildGraph(
 
 		if entry.IsDir {
 			node := &graph.GraphNode{
-				ID:      nodeID(repo.ID, "dir", entry.Path),
-				RepoID:  repo.ID,
-				Type:    graph.NodeTypeDir,
-				Name:    entry.Name,
-				Path:    entry.Path,
+				ID:     nodeID(repo.ID, "dir", entry.Path),
+				RepoID: repo.ID,
+				Type:   graph.NodeTypeDir,
+				Name:   entry.Name,
+				Path:   entry.Path,
 			}
 			pathToNodeID[entry.Path] = node.ID
 			dirNodes = append(dirNodes, node)
@@ -564,7 +564,7 @@ func (u *UseCase) parseSourceFiles(
 	err error,
 ) {
 	type parseResult struct {
-		parsed    *analysis.ParsedFile
+		parsed     *analysis.ParsedFile
 		fileNodeID string
 	}
 
@@ -591,8 +591,8 @@ func (u *UseCase) parseSourceFiles(
 				return
 			}
 
-			// Read file
-			absPath := filepath.Join(clonePath, fileNode.Path)
+			// Read file — strip leading "/" so filepath.Join works correctly
+			absPath := filepath.Join(clonePath, strings.TrimPrefix(fileNode.Path, "/"))
 			content, readErr := os.ReadFile(absPath)
 			if readErr != nil {
 				mu.Lock()
@@ -617,7 +617,7 @@ func (u *UseCase) parseSourceFiles(
 			mu.Lock()
 			processed++
 			if processed%50 == 0 || processed == total {
-				progress := 50 + (processed*20/total)
+				progress := 50 + (processed * 20 / total)
 				emit(analysis.StepParseAST, progress,
 					fmt.Sprintf("Parsing... %d/%d files", processed, total))
 			}
