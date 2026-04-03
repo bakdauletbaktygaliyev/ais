@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ais
+      POSTGRES_USER: ais
+      POSTGRES_PASSWORD: ais_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ais"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://ais:ais_secret@postgres:5432/ais?sslmode=disable
+      CLONE_DIR: /tmp/repos
+      PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - repos_data:/tmp/repos
+
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      BACKEND_URL: http://backend:8080
+    depends_on:
+      - backend
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - ai-service
+
+volumes:
+  postgres_data:
+  repos_data:

@@ -1,0 +1,76 @@
+<div class="home">
+  <div class="hero">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">AIS</span>
+    </div>
+    <h1>Architecture Insight System</h1>
+    <p class="subtitle">Transform any repository into an interactive, navigable architecture map</p>
+
+    <div class="analyze-form">
+      <div class="input-row">
+        <input
+          type="text"
+          [(ngModel)]="repoUrl"
+          placeholder="https://github.com/user/repo"
+          (keydown.enter)="analyze()"
+          [disabled]="loading"
+          class="url-input"
+        />
+        <button (click)="analyze()" [disabled]="loading || !repoUrl.trim()" class="btn-primary">
+          <span *ngIf="!loading">Analyze</span>
+          <span *ngIf="loading" class="spinner"></span>
+        </button>
+      </div>
+      <div class="error-msg" *ngIf="error">{{ error }}</div>
+      <div class="examples">
+        <span class="examples-label">Try:</span>
+        <a (click)="repoUrl='https://github.com/gin-gonic/gin'">gin-gonic/gin</a>
+        <a (click)="repoUrl='https://github.com/expressjs/express'">expressjs/express</a>
+        <a (click)="repoUrl='https://github.com/pallets/flask'">pallets/flask</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="projects-section" *ngIf="projects.length > 0">
+    <h2>Recent Projects</h2>
+    <div class="projects-grid">
+      <div
+        *ngFor="let p of projects"
+        class="project-card"
+        [class.status-done]="p.status === 'done'"
+        [class.status-error]="p.status === 'error'"
+        [class.status-loading]="p.status === 'pending' || p.status === 'analyzing'"
+        (click)="openProject(p.id)"
+      >
+        <div class="card-header">
+          <span class="project-name">{{ p.name }}</span>
+          <span class="status-badge" [attr.data-status]="p.status">{{ statusLabel(p.status) }}</span>
+        </div>
+        <div class="project-url">{{ p.url }}</div>
+        <div class="card-footer">
+          <span class="date">{{ p.created_at | date:'MMM d, y' }}</span>
+          <button class="btn-delete" (click)="deleteProject(p.id, $event)">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">🗺️</div>
+      <h3>Interactive Graph</h3>
+      <p>Explore your codebase as a force-directed graph with drill-down navigation</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔗</div>
+      <h3>Dependency Analysis</h3>
+      <p>Visualize import relationships between modules and files</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🤖</div>
+      <h3>AI Assistant</h3>
+      <p>Ask questions about architecture, logic, and structure in plain language</p>
+    </div>
+  </div>
+</div>

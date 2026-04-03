@@ -1,0 +1,25 @@
+<div class="graph-wrap">
+  <div #svgContainer class="svg-container"></div>
+
+  <div class="hint" *ngIf="graph.nodes.length > 0">
+    Double-click a folder to drill in · Scroll to zoom · Drag to pan
+  </div>
+
+  <div
+    class="tooltip"
+    *ngIf="tooltip.visible && tooltip.node"
+    [style.left.px]="tooltip.x"
+    [style.top.px]="tooltip.y"
+  >
+    <div class="tt-name">{{ tooltip.node.name }}</div>
+    <div class="tt-path">{{ tooltip.node.path }}</div>
+    <div class="tt-meta">
+      <span *ngIf="tooltip.node.type === 'file'">
+        {{ tooltip.node.language }} · {{ tooltip.node.lines }} lines · {{ tooltip.node.size | number }} bytes
+      </span>
+      <span *ngIf="tooltip.node.type === 'directory'">
+        📁 {{ tooltip.node.children }} items — double-click to open
+      </span>
+    </div>
+  </div>
+</div>

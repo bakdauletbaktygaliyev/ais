@@ -1,0 +1,60 @@
+.graph-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.svg-container {
+  width: 100%;
+  height: 100%;
+}
+
+.hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--text3);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 20px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.tooltip {
+  position: absolute;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  pointer-events: none;
+  z-index: 100;
+  max-width: 280px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.tt-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 4px;
+}
+
+.tt-path {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+
+.tt-meta {
+  font-size: 12px;
+  color: var(--text2);
+}

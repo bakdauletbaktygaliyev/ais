@@ -1,0 +1,57 @@
+<div class="project-page">
+  <header class="topbar">
+    <button class="btn-back" (click)="goHome()">
+      <span>←</span> AIS
+    </button>
+    <div class="breadcrumbs" *ngIf="project?.status === 'done'">
+      <span class="crumb root" (click)="navigateTo(-1)">{{ project?.name }}</span>
+      <ng-container *ngFor="let crumb of breadcrumbs; let i = index">
+        <span class="separator">/</span>
+        <span class="crumb" (click)="navigateTo(i)">{{ crumb }}</span>
+      </ng-container>
+    </div>
+    <div class="topbar-right">
+      <a *ngIf="project?.url" [href]="project?.url" target="_blank" class="repo-link">
+        ↗ Repository
+      </a>
+      <button
+        *ngIf="project?.status === 'done'"
+        class="btn-chat"
+        [class.active]="chatOpen"
+        (click)="chatOpen = !chatOpen"
+      >
+        🤖 AI Assistant
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="status-view" *ngIf="loading || (project && project.status !== 'done')">
+      <div class="status-inner">
+        <div class="status-icon" *ngIf="project?.status !== 'error'">
+          <div class="pulse-ring"></div>
+          <div class="pulse-dot"></div>
+        </div>
+        <div class="status-icon error-icon" *ngIf="project?.status === 'error'">✕</div>
+        <p class="status-text">{{ statusMessage }}</p>
+        <p class="status-url" *ngIf="project?.url">{{ project?.url }}</p>
+      </div>
+    </div>
+
+    <div class="graph-area" *ngIf="project?.status === 'done'">
+      <app-graph
+        [graph]="graph"
+        [currentPath]="currentPath"
+        (drillDown)="onNodeDrillDown($event)"
+      ></app-graph>
+    </div>
+
+    <div class="chat-panel" [class.open]="chatOpen" *ngIf="project">
+      <app-chat
+        [projectId]="project.id"
+        [currentPath]="currentPath"
+        (close)="chatOpen = false"
+      ></app-chat>
+    </div>
+  </div>
+</div>
