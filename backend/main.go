@@ -42,6 +42,13 @@ func main() {
 		auth.POST("/login", h.Login)
 	}
 
+	// Internal routes — for service-to-service calls (no JWT)
+	internal := r.Group("/internal")
+	{
+		internal.GET("/projects/:id", h.InternalGetProject)
+		internal.GET("/projects/:id/graph", h.InternalGetGraph)
+	}
+
 	// Protected API routes — JWT required
 	api := r.Group("/api")
 	api.Use(middleware.RequireAuth())

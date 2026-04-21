@@ -67,12 +67,11 @@ export class ProjectComponent implements OnInit, OnDestroy {
   }
 
   onBackClick() {
-    const isAnalyzing = this.project?.status === 'pending' || this.project?.status === 'analyzing';
-    if (isAnalyzing) {
-      this.showLeaveConfirm = true;
-    } else {
-      this.router.navigate(['/']);
-    }
+    this.showLeaveConfirm = true;
+  }
+
+  get isAnalyzing(): boolean {
+    return this.project?.status === 'pending' || this.project?.status === 'analyzing';
   }
 
   confirmLeave() {

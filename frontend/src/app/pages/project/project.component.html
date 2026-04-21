@@ -26,15 +26,17 @@
     </div>
   </header>
 
-  <!-- Leave confirmation dialog (shown during analysis) -->
+  <!-- Leave confirmation dialog -->
   <div class="confirm-overlay" *ngIf="showLeaveConfirm">
     <div class="confirm-box">
       <div class="confirm-icon">⚠</div>
-      <p class="confirm-title">Analysis in progress</p>
-      <p class="confirm-msg">The repository is still being analyzed. If you leave now, the analysis will continue in the background and you can return to it from the home page.</p>
+      <p class="confirm-title" *ngIf="isAnalyzing">Analysis in progress</p>
+      <p class="confirm-title" *ngIf="!isAnalyzing">Leave project?</p>
+      <p class="confirm-msg" *ngIf="isAnalyzing">The repository is still being analyzed. If you leave now, the analysis will continue in the background and you can return to it from the home page.</p>
+      <p class="confirm-msg" *ngIf="!isAnalyzing">Are you sure you want to leave this project and return to the home page?</p>
       <div class="confirm-actions">
         <button class="btn-confirm-cancel" (click)="showLeaveConfirm = false">Stay</button>
-        <button class="btn-confirm-leave" (click)="confirmLeave()">Leave anyway</button>
+        <button class="btn-confirm-leave" (click)="confirmLeave()">Leave</button>
       </div>
     </div>
   </div>

@@ -33,13 +33,13 @@ async def chat(req: ChatRequest):
 
     async with httpx.AsyncClient(timeout=30) as http:
         try:
-            proj_resp = await http.get(f"{BACKEND_URL}/api/projects/{req.project_id}")
+            proj_resp = await http.get(f"{BACKEND_URL}/internal/projects/{req.project_id}")
             if proj_resp.status_code != 200:
                 raise HTTPException(status_code=404, detail="Project not found")
             project = proj_resp.json()
 
             graph_path = req.current_path if req.current_path else ""
-            graph_url = f"{BACKEND_URL}/api/projects/{req.project_id}/graph"
+            graph_url = f"{BACKEND_URL}/internal/projects/{req.project_id}/graph"
             if graph_path:
                 graph_url += f"?path={graph_path}"
             graph_resp = await http.get(graph_url)
