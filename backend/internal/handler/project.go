@@ -8,8 +8,10 @@ import (
 )
 
 func (h *Handler) ListProjects(c *gin.Context) {
+	userID := c.GetString("user_id")
 	rows, err := h.db.Query(
-		`SELECT id, url, name, status, error_msg, created_at FROM projects ORDER BY created_at DESC`,
+		`SELECT id, url, name, status, error_msg, created_at
+		 FROM projects WHERE user_id = $1 ORDER BY created_at DESC`, userID,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -31,9 +33,10 @@ func (h *Handler) ListProjects(c *gin.Context) {
 }
 
 func (h *Handler) GetProject(c *gin.Context) {
-	id := c.Param("id")
+	userID := c.GetString("user_id")
 	row := h.db.QueryRow(
-		`SELECT id, url, name, status, error_msg, created_at FROM projects WHERE id=$1`, id,
+		`SELECT id, url, name, status, error_msg, created_at
+		 FROM projects WHERE id = $1 AND user_id = $2`, c.Param("id"), userID,
 	)
 	var pid, url, name, status, errMsg string
 	var createdAt time.Time
@@ -48,6 +51,7 @@ func (h *Handler) GetProject(c *gin.Context) {
 }
 
 func (h *Handler) DeleteProject(c *gin.Context) {
-	h.db.Exec(`DELETE FROM projects WHERE id=$1`, c.Param("id"))
+	userID := c.GetString("user_id")
+	h.db.Exec(`DELETE FROM projects WHERE id = $1 AND user_id = $2`, c.Param("id"), userID)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }

@@ -1,0 +1,58 @@
+<div class="viewer">
+  <!-- Header -->
+  <div class="viewer-header">
+    <div class="file-meta">
+      <span class="lang-dot" [style.background]="nodeColor"></span>
+      <span class="file-path" [title]="node?.path">{{ node?.path }}</span>
+      <span class="lang-label" *ngIf="node?.language">{{ node?.language }}</span>
+    </div>
+    <button class="btn-close" (click)="close.emit()" title="Close">✕</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" *ngIf="node">
+    <span class="stat">{{ node.lines | number }} lines</span>
+    <ng-container *ngIf="imports.length > 0">
+      <span class="stat-sep">·</span>
+      <span class="stat"><span class="dot out"></span>{{ imports.length }} import{{ imports.length !== 1 ? 's' : '' }}</span>
+    </ng-container>
+    <ng-container *ngIf="importedBy.length > 0">
+      <span class="stat-sep">·</span>
+      <span class="stat"><span class="dot in"></span>used by {{ importedBy.length }}</span>
+    </ng-container>
+  </div>
+
+  <!-- Deps -->
+  <div class="deps-section" *ngIf="imports.length > 0 || importedBy.length > 0">
+    <div class="deps-group" *ngIf="imports.length > 0">
+      <div class="deps-label"><span class="arrow-out">→</span> Imports</div>
+      <div class="dep-list">
+        <div class="dep-item" *ngFor="let d of imports" [title]="d.path">
+          <span class="dep-name">{{ d.name }}</span>
+          <span class="dep-path">{{ d.path }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="deps-group" *ngIf="importedBy.length > 0">
+      <div class="deps-label"><span class="arrow-in">←</span> Imported by</div>
+      <div class="dep-list">
+        <div class="dep-item" *ngFor="let d of importedBy" [title]="d.path">
+          <span class="dep-name">{{ d.name }}</span>
+          <span class="dep-path">{{ d.path }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monaco editor -->
+  <div class="editor-wrap">
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <span>Loading…</span>
+    </div>
+    <div class="error-state" *ngIf="!loading && error">
+      <span>⚠ {{ error }}</span>
+    </div>
+    <div #editorContainer class="monaco-container" [class.hidden]="loading || !!error"></div>
+  </div>
+</div>

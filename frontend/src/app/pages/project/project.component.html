@@ -1,13 +1,14 @@
 <div class="project-page">
   <header class="topbar">
-    <button class="btn-back" (click)="goHome()">
+    <button class="btn-back" (click)="onBackClick()">
       <span>←</span> AIS
     </button>
     <div class="breadcrumbs" *ngIf="project?.status === 'done'">
+      <button class="btn-up" *ngIf="breadcrumbs.length > 0" (click)="goUp()" title="Up one level">↑</button>
       <span class="crumb root" (click)="navigateTo(-1)">{{ project?.name }}</span>
       <ng-container *ngFor="let crumb of breadcrumbs; let i = index">
         <span class="separator">/</span>
-        <span class="crumb" (click)="navigateTo(i)">{{ crumb }}</span>
+        <span class="crumb" [class.active]="i === breadcrumbs.length - 1" (click)="navigateTo(i)">{{ crumb }}</span>
       </ng-container>
     </div>
     <div class="topbar-right">
@@ -24,6 +25,19 @@
       </button>
     </div>
   </header>
+
+  <!-- Leave confirmation dialog (shown during analysis) -->
+  <div class="confirm-overlay" *ngIf="showLeaveConfirm">
+    <div class="confirm-box">
+      <div class="confirm-icon">⚠</div>
+      <p class="confirm-title">Analysis in progress</p>
+      <p class="confirm-msg">The repository is still being analyzed. If you leave now, the analysis will continue in the background and you can return to it from the home page.</p>
+      <div class="confirm-actions">
+        <button class="btn-confirm-cancel" (click)="showLeaveConfirm = false">Stay</button>
+        <button class="btn-confirm-leave" (click)="confirmLeave()">Leave anyway</button>
+      </div>
+    </div>
+  </div>
 
   <div class="content">
     <div class="status-view" *ngIf="loading || (project && project.status !== 'done')">
@@ -43,7 +57,21 @@
         [graph]="graph"
         [currentPath]="currentPath"
         (drillDown)="onNodeDrillDown($event)"
+        (fileSelect)="onFileSelect($event)"
       ></app-graph>
+      <div class="hint" *ngIf="!selectedFile">
+        double-click a file to view its code
+      </div>
+    </div>
+
+    <div class="file-viewer-panel" [class.open]="selectedFile !== null">
+      <app-file-viewer
+        *ngIf="selectedFile"
+        [node]="selectedFile"
+        [projectId]="project?.id ?? ''"
+        [graph]="graph"
+        (close)="closeFileViewer()"
+      ></app-file-viewer>
     </div>
 
     <div class="chat-panel" [class.open]="chatOpen" *ngIf="project">

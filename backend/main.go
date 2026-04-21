@@ -6,6 +6,7 @@ import (
 
 	"github.com/ais/backend/internal/db"
 	"github.com/ais/backend/internal/handler"
+	"github.com/ais/backend/internal/middleware"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -33,12 +34,23 @@ func main() {
 
 	r.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
 
+	// Public auth routes — no JWT required
+	auth := r.Group("/api/auth")
+	{
+		auth.POST("/register", h.Register)
+		auth.POST("/verify", h.Verify)
+		auth.POST("/login", h.Login)
+	}
+
+	// Protected API routes — JWT required
 	api := r.Group("/api")
+	api.Use(middleware.RequireAuth())
 	{
 		api.POST("/analyze", h.Analyze)
 		api.GET("/projects", h.ListProjects)
 		api.GET("/projects/:id", h.GetProject)
 		api.GET("/projects/:id/graph", h.GetGraph)
+		api.GET("/projects/:id/file", h.GetFile)
 		api.DELETE("/projects/:id", h.DeleteProject)
 	}
 

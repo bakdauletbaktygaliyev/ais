@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService, Project } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -16,10 +17,16 @@ export class HomeComponent implements OnInit {
   loading = false;
   error = '';
   projects: Project[] = [];
+  userEmail = '';
 
-  constructor(private api: ApiService, private router: Router) {}
+  constructor(
+    private api: ApiService,
+    private auth: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
+    this.userEmail = this.auth.getEmail() ?? '';
     this.loadProjects();
   }
 
@@ -56,6 +63,11 @@ export class HomeComponent implements OnInit {
       next: () => this.loadProjects(),
       error: () => {}
     });
+  }
+
+  logout() {
+    this.auth.logout();
+    this.router.navigate(['/login']);
   }
 
   statusLabel(status: string): string {

@@ -26,8 +26,23 @@ func Connect(dsn string) (*sql.DB, error) {
 
 func Init(database *sql.DB) error {
 	_, err := database.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			id            UUID PRIMARY KEY,
+			email         TEXT NOT NULL UNIQUE,
+			password_hash TEXT NOT NULL,
+			created_at    TIMESTAMP DEFAULT NOW()
+		);
+
+		CREATE TABLE IF NOT EXISTS pending_verifications (
+			email         TEXT PRIMARY KEY,
+			password_hash TEXT NOT NULL,
+			code          TEXT NOT NULL,
+			expires_at    TIMESTAMP NOT NULL
+		);
+
 		CREATE TABLE IF NOT EXISTS projects (
 			id          UUID PRIMARY KEY,
+			user_id     UUID REFERENCES users(id) ON DELETE CASCADE,
 			url         TEXT NOT NULL,
 			name        TEXT NOT NULL,
 			status      TEXT NOT NULL DEFAULT 'pending',
@@ -36,7 +51,14 @@ func Init(database *sql.DB) error {
 			file_tree   JSONB,
 			created_at  TIMESTAMP DEFAULT NOW(),
 			updated_at  TIMESTAMP DEFAULT NOW()
-		)
+		);
+
+		CREATE TABLE IF NOT EXISTS file_contents (
+			project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+			path       TEXT NOT NULL,
+			content    TEXT NOT NULL,
+			PRIMARY KEY (project_id, path)
+		);
 	`)
 	return err
 }

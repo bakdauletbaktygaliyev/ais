@@ -23,6 +23,12 @@ services:
       DATABASE_URL: postgres://ais:ais_secret@postgres:5432/ais?sslmode=disable
       CLONE_DIR: /tmp/repos
       PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-changeme-in-production}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
     depends_on:
       postgres:
         condition: service_healthy

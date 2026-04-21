@@ -18,6 +18,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() graph: GraphData = { nodes: [], edges: [] };
   @Input() currentPath = '';
   @Output() drillDown = new EventEmitter<GraphNode>();
+  @Output() fileSelect = new EventEmitter<GraphNode>();
 
   @ViewChild('svgContainer') svgContainer!: ElementRef<HTMLDivElement>;
 
@@ -158,7 +159,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
       .selectAll<SVGGElement, typeof nodes[0]>('g')
       .data(nodes)
       .join('g')
-      .attr('cursor', d => d.type === 'directory' ? 'pointer' : 'default')
+      .attr('cursor', 'pointer')
       .call(
         d3.drag<SVGGElement, typeof nodes[0]>()
           .on('start', (event, d) => {
@@ -298,6 +299,8 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
         event.stopPropagation();
         if (d.type === 'directory') {
           this.zone.run(() => this.drillDown.emit(d));
+        } else {
+          this.zone.run(() => this.fileSelect.emit(d));
         }
       });
 
