@@ -40,6 +40,20 @@
   color: var(--text2);
 }
 
+.btn-up {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 13px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.btn-up:hover { color: var(--accent); border-color: var(--accent); }
+
 .crumb {
   cursor: pointer;
   padding: 2px 6px;
@@ -50,6 +64,7 @@
 
 .crumb:hover { color: var(--accent); }
 .crumb.root { color: var(--text); font-weight: 600; }
+.crumb.active { color: var(--text); }
 .separator { color: var(--text3); }
 
 .topbar-right {
@@ -86,6 +101,80 @@
   background: rgba(88,166,255,0.1);
 }
 
+/* Leave confirmation overlay */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+
+.confirm-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 28px;
+  max-width: 420px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.confirm-icon {
+  font-size: 28px;
+  color: var(--yellow);
+}
+
+.confirm-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.confirm-msg {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn-confirm-cancel {
+  padding: 8px 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn-confirm-cancel:hover { color: var(--text); border-color: var(--text2); }
+
+.btn-confirm-leave {
+  padding: 8px 20px;
+  background: rgba(248, 81, 73, 0.15);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-confirm-leave:hover { background: rgba(248, 81, 73, 0.25); }
+
 .content {
   flex: 1;
   display: flex;
@@ -96,6 +185,19 @@
 .graph-area {
   flex: 1;
   overflow: hidden;
+  position: relative;
+}
+
+.file-viewer-panel {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.3s ease;
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.file-viewer-panel.open {
+  width: 480px;
 }
 
 .chat-panel {
@@ -108,6 +210,21 @@
 
 .chat-panel.open {
   width: 380px;
+}
+
+.hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--text3);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0.7;
 }
 
 .status-view {

@@ -20,27 +20,34 @@ func (h *Handler) Analyze(c *gin.Context) {
 		return
 	}
 
+	userID := c.GetString("user_id")
+
+	var exists int
+	if err := h.db.QueryRow(`SELECT 1 FROM users WHERE id = $1`, userID).Scan(&exists); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found, please log in again"})
+		return
+	}
+
 	repoURL := normalizeURL(req.URL)
 	name := extractRepoName(repoURL)
 	id := uuid.New().String()
 
 	if _, err := h.db.Exec(
-		`INSERT INTO projects (id, url, name, status) VALUES ($1, $2, $3, 'pending')`,
-		id, repoURL, name,
+		`INSERT INTO projects (id, user_id, url, name, status) VALUES ($1, $2, $3, $4, 'pending')`,
+		id, userID, repoURL, name,
 	); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	go h.runAnalysis(id, repoURL)
-
 	c.JSON(http.StatusAccepted, gin.H{"id": id, "status": "pending", "name": name})
 }
 
 func (h *Handler) runAnalysis(id, repoURL string) {
 	h.updateStatus(id, "analyzing", "")
 
-	graph, fileTree, err := parser.ParseRepo(repoURL, h.cloneDir)
+	graph, fileTree, contents, err := parser.ParseRepo(repoURL, h.cloneDir)
 	if err != nil {
 		h.updateStatus(id, "error", err.Error())
 		return
@@ -53,4 +60,13 @@ func (h *Handler) runAnalysis(id, repoURL string) {
 		`UPDATE projects SET status='done', graph_data=$1, file_tree=$2, updated_at=NOW() WHERE id=$3`,
 		string(graphJSON), string(treeJSON), id,
 	)
+
+	// Store file contents in bulk
+	for path, content := range contents {
+		h.db.Exec(
+			`INSERT INTO file_contents (project_id, path, content) VALUES ($1, $2, $3)
+			 ON CONFLICT DO NOTHING`,
+			id, path, content,
+		)
+	}
 }

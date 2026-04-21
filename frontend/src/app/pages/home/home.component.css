@@ -6,6 +6,38 @@
   padding: 0 24px 64px;
 }
 
+.topbar {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.topbar-email {
+  font-size: 13px;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.btn-logout {
+  font-size: 13px;
+  color: var(--text2);
+  background: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-logout:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
 .hero {
   display: flex;
   flex-direction: column;

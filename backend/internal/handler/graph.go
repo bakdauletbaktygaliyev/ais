@@ -12,7 +12,10 @@ import (
 )
 
 func (h *Handler) GetGraph(c *gin.Context) {
-	row := h.db.QueryRow(`SELECT graph_data FROM projects WHERE id=$1`, c.Param("id"))
+	userID := c.GetString("user_id")
+	row := h.db.QueryRow(
+		`SELECT graph_data FROM projects WHERE id = $1 AND user_id = $2`, c.Param("id"), userID,
+	)
 
 	var raw sql.NullString
 	if err := row.Scan(&raw); err != nil {

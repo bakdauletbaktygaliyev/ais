@@ -37,6 +37,12 @@ export class ApiService {
     return this.http.delete<void>(`${this.api}/projects/${id}`);
   }
 
+  getFileContent(projectId: string, path: string): Observable<{ path: string; content: string }> {
+    return this.http.get<{ path: string; content: string }>(
+      `${this.api}/projects/${projectId}/file?path=${encodeURIComponent(path)}`
+    );
+  }
+
   chat(projectId: string, question: string, currentPath: string): Observable<ChatResponse> {
     return this.http.post<ChatResponse>(`${this.ai}/chat`, {
       project_id: projectId,
