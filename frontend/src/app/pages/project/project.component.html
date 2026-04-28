@@ -58,6 +58,7 @@
       <app-graph
         [graph]="graph"
         [currentPath]="currentPath"
+        [projectName]="project?.name ?? ''"
         (drillDown)="onNodeDrillDown($event)"
         (fileSelect)="onFileSelect($event)"
       ></app-graph>

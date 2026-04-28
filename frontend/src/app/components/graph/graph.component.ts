@@ -7,6 +7,23 @@ import { GraphData, GraphNode, GraphEdge } from '../../models/project.model';
 import { langColor } from './graph.utils';
 import * as d3 from 'd3';
 
+interface LangStat {
+  name: string;
+  files: number;
+  lines: number;
+  color: string;
+  pct: number;
+}
+
+interface ProjectStats {
+  totalFiles: number;
+  totalDirs: number;
+  totalLines: number;
+  totalDeps: number;
+  languages: LangStat[];
+  topFiles: { name: string; path: string; lines: number }[];
+}
+
 const CARD_W = 168;
 const CARD_H = 58;
 const CARD_H_DIR = 68;
@@ -45,12 +62,15 @@ function rectEdgePoint(
 export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() graph: GraphData = { nodes: [], edges: [] };
   @Input() currentPath = '';
+  @Input() projectName = '';
   @Output() drillDown = new EventEmitter<GraphNode>();
   @Output() fileSelect = new EventEmitter<GraphNode>();
 
   @ViewChild('svgContainer') svgContainer!: ElementRef<HTMLDivElement>;
 
   tooltip = { visible: false, x: 0, y: 0, node: null as GraphNode | null };
+  showStats = false;
+  stats: ProjectStats | null = null;
   private simulation: d3.Simulation<any, any> | null = null;
   private initialized = false;
   private resizeObserver: ResizeObserver | null = null;
@@ -67,6 +87,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    if (changes['graph']) this.computeStats();
     if (this.initialized && (changes['graph'] || changes['currentPath'])) {
       this.renderGraph();
     }
@@ -75,6 +96,80 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     this.simulation?.stop();
     this.resizeObserver?.disconnect();
+  }
+
+  private computeStats() {
+    const files = this.graph.nodes.filter(n => n.type === 'file');
+    const dirs = this.graph.nodes.filter(n => n.type === 'directory');
+    const totalLines = files.reduce((s, n) => s + (n.lines || 0), 0);
+
+    const langMap = new Map<string, { files: number; lines: number }>();
+    for (const n of files) {
+      const lang = n.language || 'text';
+      const prev = langMap.get(lang) ?? { files: 0, lines: 0 };
+      langMap.set(lang, { files: prev.files + 1, lines: prev.lines + (n.lines || 0) });
+    }
+    const total = files.length || 1;
+    const languages: LangStat[] = Array.from(langMap.entries())
+      .map(([name, { files: f, lines }]) => ({
+        name, files: f, lines,
+        color: langColor(name, 'file'),
+        pct: Math.round((f / total) * 100),
+      }))
+      .sort((a, b) => b.files - a.files)
+      .slice(0, 7);
+
+    const topFiles = [...files]
+      .sort((a, b) => (b.lines || 0) - (a.lines || 0))
+      .slice(0, 5)
+      .map(n => ({ name: n.name, path: n.path, lines: n.lines || 0 }));
+
+    this.stats = {
+      totalFiles: files.length,
+      totalDirs: dirs.length,
+      totalLines,
+      totalDeps: this.graph.edges.length,
+      languages,
+      topFiles,
+    };
+  }
+
+  exportPng() {
+    const container = this.svgContainer?.nativeElement;
+    if (!container) return;
+    const svgEl = container.querySelector('svg');
+    if (!svgEl) return;
+
+    const w = svgEl.clientWidth;
+    const h = svgEl.clientHeight;
+    const scale = 2;
+
+    const serializer = new XMLSerializer();
+    let svgStr = serializer.serializeToString(svgEl);
+    if (!svgStr.includes('xmlns=')) {
+      svgStr = svgStr.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
+    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = w * scale;
+      canvas.height = h * scale;
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(scale, scale);
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      const a = document.createElement('a');
+      a.download = `${this.projectName || 'graph'}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
   }
 
   private renderGraph() {

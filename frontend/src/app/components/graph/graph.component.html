@@ -1,8 +1,71 @@
 <div class="graph-wrap">
   <div #svgContainer class="svg-container"></div>
 
+  <!-- Controls: top-right -->
+  <div class="graph-controls" *ngIf="graph.nodes.length > 0">
+    <button class="ctrl-btn" (click)="showStats = !showStats" [class.active]="showStats" title="Project statistics">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M1 11h2v3H1v-3zm4-4h2v7H5V7zm4-3h2v10H9V4zm4-3h2v13h-2V1z"/>
+      </svg>
+      Stats
+    </button>
+    <button class="ctrl-btn" (click)="exportPng()" title="Export graph as PNG">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M7.47 10.78a.75.75 0 0 0 1.06 0l3.75-3.75a.75.75 0 0 0-1.06-1.06L8.75 8.44V1.75a.75.75 0 0 0-1.5 0v6.69L4.78 5.97a.75.75 0 0 0-1.06 1.06l3.75 3.75Z"/>
+        <path d="M1.75 13.25a.75.75 0 0 0 0 1.5h12.5a.75.75 0 0 0 0-1.5H1.75Z"/>
+      </svg>
+      Export PNG
+    </button>
+  </div>
+
+  <!-- Stats panel: bottom-left -->
+  <div class="stats-panel" *ngIf="showStats && stats">
+    <div class="sp-header">
+      <span class="sp-title">Project Stats</span>
+      <button class="sp-close" (click)="showStats = false">×</button>
+    </div>
+    <div class="sp-counters">
+      <div class="sp-counter">
+        <span class="sp-num">{{ stats.totalFiles }}</span>
+        <span class="sp-label">files</span>
+      </div>
+      <div class="sp-counter">
+        <span class="sp-num">{{ stats.totalDirs }}</span>
+        <span class="sp-label">dirs</span>
+      </div>
+      <div class="sp-counter">
+        <span class="sp-num">{{ stats.totalDeps }}</span>
+        <span class="sp-label">deps</span>
+      </div>
+      <div class="sp-counter">
+        <span class="sp-num">{{ stats.totalLines | number }}</span>
+        <span class="sp-label">lines</span>
+      </div>
+    </div>
+
+    <div class="sp-section-title">Languages</div>
+    <div class="sp-langs">
+      <div class="sp-lang" *ngFor="let l of stats.languages">
+        <span class="sp-dot" [style.background]="l.color"></span>
+        <span class="sp-lang-name">{{ l.name }}</span>
+        <div class="sp-bar-wrap">
+          <div class="sp-bar" [style.width.%]="l.pct" [style.background]="l.color"></div>
+        </div>
+        <span class="sp-pct">{{ l.pct }}%</span>
+      </div>
+    </div>
+
+    <div class="sp-section-title">Largest files</div>
+    <div class="sp-files">
+      <div class="sp-file" *ngFor="let f of stats.topFiles">
+        <span class="sp-file-name" [title]="f.path">{{ f.name }}</span>
+        <span class="sp-file-lines">{{ f.lines | number }}</span>
+      </div>
+    </div>
+  </div>
+
   <div class="hint" *ngIf="graph.nodes.length > 0">
-    Double-click a folder to drill in · Scroll to zoom · Drag to pan
+    Double-click folder to drill in · Scroll to zoom · Drag to pan
   </div>
 
   <div
@@ -18,7 +81,7 @@
         {{ tooltip.node.language }} · {{ tooltip.node.lines }} lines · {{ tooltip.node.size | number }} bytes
       </span>
       <span *ngIf="tooltip.node.type === 'directory'">
-        📁 {{ tooltip.node.children }} items — double-click to open
+        {{ tooltip.node.children }} items — double-click to open
       </span>
     </div>
   </div>
