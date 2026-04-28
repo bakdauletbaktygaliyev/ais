@@ -189,27 +189,37 @@
 }
 
 .file-viewer-panel {
-  width: 0;
   overflow: hidden;
-  transition: width 0.3s ease;
   border-left: 1px solid var(--border);
   flex-shrink: 0;
-}
-
-.file-viewer-panel.open {
-  width: 480px;
+  position: relative;
+  transition: width 0.2s ease;
 }
 
 .chat-panel {
-  width: 0;
   overflow: hidden;
-  transition: width 0.3s ease;
   border-left: 1px solid var(--border);
   background: var(--bg2);
+  position: relative;
+  transition: width 0.2s ease;
 }
 
-.chat-panel.open {
-  width: 380px;
+.resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--accent);
+  opacity: 0.5;
 }
 
 .hint {

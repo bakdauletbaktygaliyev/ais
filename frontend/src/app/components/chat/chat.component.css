@@ -49,10 +49,12 @@
 
 .msg-bubble {
   max-width: 85%;
+  min-width: 0;
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.6;
+  overflow: hidden;
 }
 
 .message.user .msg-bubble {
@@ -186,7 +188,8 @@
   border-radius: 6px;
   background: var(--bg);
   border: 1px solid var(--border);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .md-lang {

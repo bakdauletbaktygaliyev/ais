@@ -24,6 +24,8 @@ export class ProjectComponent implements OnInit, OnDestroy {
   loading = true;
   selectedFile: GraphNode | null = null;
   showLeaveConfirm = false;
+  chatWidth = 380;
+  fileViewerWidth = 480;
 
   private sub: Subscription | null = null;
 
@@ -108,6 +110,31 @@ export class ProjectComponent implements OnInit, OnDestroy {
     }
     this.selectedFile = null;
     this.loadGraph();
+  }
+
+  startResize(event: MouseEvent, panel: 'chat' | 'fileViewer') {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = panel === 'chat' ? this.chatWidth : this.fileViewerWidth;
+
+    const onMove = (e: MouseEvent) => {
+      const delta = startX - e.clientX;
+      const newWidth = Math.max(260, Math.min(900, startWidth + delta));
+      if (panel === 'chat') this.chatWidth = newWidth;
+      else this.fileViewerWidth = newWidth;
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   }
 
   get statusMessage(): string {

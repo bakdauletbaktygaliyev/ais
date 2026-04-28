@@ -67,7 +67,10 @@
       </div>
     </div>
 
-    <div class="file-viewer-panel" [class.open]="selectedFile !== null">
+    <div class="file-viewer-panel"
+         [style.width.px]="selectedFile ? fileViewerWidth : 0"
+         [style.overflow]="selectedFile ? 'hidden' : 'hidden'">
+      <div class="resize-handle" (mousedown)="startResize($event, 'fileViewer')" *ngIf="selectedFile"></div>
       <app-file-viewer
         *ngIf="selectedFile"
         [node]="selectedFile"
@@ -77,7 +80,10 @@
       ></app-file-viewer>
     </div>
 
-    <div class="chat-panel" [class.open]="chatOpen" *ngIf="project">
+    <div class="chat-panel"
+         [style.width.px]="chatOpen ? chatWidth : 0"
+         *ngIf="project">
+      <div class="resize-handle" (mousedown)="startResize($event, 'chat')" *ngIf="chatOpen"></div>
       <app-chat
         [projectId]="project.id"
         [currentPath]="currentPath"
