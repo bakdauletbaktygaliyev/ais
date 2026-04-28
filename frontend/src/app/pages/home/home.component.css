@@ -134,6 +134,35 @@ h1 {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.branch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.branch-icon {
+  font-size: 14px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.branch-input {
+  width: 200px;
+  padding: 7px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: border-color 0.2s;
+}
+
+.branch-input:focus { border-color: var(--accent); outline: none; }
+.branch-input::placeholder { color: var(--text3); }
+.branch-input:disabled { opacity: 0.5; }
+
 .error-msg {
   margin-top: 8px;
   color: var(--red);

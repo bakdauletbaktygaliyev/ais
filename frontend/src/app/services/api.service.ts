@@ -12,9 +12,11 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  analyze(url: string): Observable<{ id: string; status: string; name: string }> {
+  analyze(url: string, branch?: string): Observable<{ id: string; status: string; name: string }> {
+    const body: { url: string; branch?: string } = { url };
+    if (branch) body.branch = branch;
     return this.http.post<{ id: string; status: string; name: string }>(
-      `${this.api}/analyze`, { url }
+      `${this.api}/analyze`, body
     );
   }
 

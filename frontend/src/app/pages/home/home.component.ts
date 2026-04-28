@@ -14,6 +14,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class HomeComponent implements OnInit {
   repoUrl = '';
+  branch = '';
   loading = false;
   error = '';
   projects: Project[] = [];
@@ -41,7 +42,7 @@ export class HomeComponent implements OnInit {
     if (!this.repoUrl.trim()) return;
     this.loading = true;
     this.error = '';
-    this.api.analyze(this.repoUrl.trim()).subscribe({
+    this.api.analyze(this.repoUrl.trim(), this.branch.trim() || undefined).subscribe({
       next: (res) => {
         this.loading = false;
         this.router.navigate(['/project', res.id]);

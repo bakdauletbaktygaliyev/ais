@@ -10,7 +10,8 @@ import (
 )
 
 type analyzeRequest struct {
-	URL string `json:"url" binding:"required"`
+	URL    string `json:"url" binding:"required"`
+	Branch string `json:"branch"`
 }
 
 func (h *Handler) Analyze(c *gin.Context) {
@@ -30,6 +31,9 @@ func (h *Handler) Analyze(c *gin.Context) {
 
 	repoURL := normalizeURL(req.URL)
 	name := extractRepoName(repoURL)
+	if req.Branch != "" {
+		name = name + "@" + req.Branch
+	}
 	id := uuid.New().String()
 
 	if _, err := h.db.Exec(
@@ -40,14 +44,14 @@ func (h *Handler) Analyze(c *gin.Context) {
 		return
 	}
 
-	go h.runAnalysis(id, repoURL)
+	go h.runAnalysis(id, repoURL, req.Branch)
 	c.JSON(http.StatusAccepted, gin.H{"id": id, "status": "pending", "name": name})
 }
 
-func (h *Handler) runAnalysis(id, repoURL string) {
+func (h *Handler) runAnalysis(id, repoURL, branch string) {
 	h.updateStatus(id, "analyzing", "")
 
-	graph, fileTree, contents, err := parser.ParseRepo(repoURL, h.cloneDir)
+	graph, fileTree, contents, err := parser.ParseRepo(repoURL, h.cloneDir, branch)
 	if err != nil {
 		h.updateStatus(id, "error", err.Error())
 		return

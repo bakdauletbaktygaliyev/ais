@@ -8,11 +8,17 @@ import (
 	"github.com/google/uuid"
 )
 
-func ParseRepo(repoURL, cloneDir string) (*GraphData, []FileNode, map[string]string, error) {
+func ParseRepo(repoURL, cloneDir, branch string) (*GraphData, []FileNode, map[string]string, error) {
 	repoPath := filepath.Join(cloneDir, uuid.New().String())
 	defer os.RemoveAll(repoPath)
 
-	cmd := exec.Command("git", "clone", "--depth=1", "--single-branch", repoURL, repoPath)
+	args := []string{"clone", "--depth=1", "--single-branch"}
+	if branch != "" {
+		args = append(args, "--branch", branch)
+	}
+	args = append(args, repoURL, repoPath)
+
+	cmd := exec.Command("git", args...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return nil, nil, nil, &CloneError{Msg: string(out)}
