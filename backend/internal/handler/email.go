@@ -12,39 +12,43 @@ import (
 )
 
 func sendVerificationEmail(toEmail, code string) error {
-	if apiKey := os.Getenv("RESEND_API_KEY"); apiKey != "" {
-		return sendViaResend(apiKey, toEmail, code)
+	if key := os.Getenv("MAILJET_API_KEY"); key != "" {
+		return sendViaMailjet(key, os.Getenv("MAILJET_SECRET_KEY"), toEmail, code)
 	}
 	return sendViaSMTP(toEmail, code)
 }
 
-func sendViaResend(apiKey, toEmail, code string) error {
+func sendViaMailjet(apiKey, secretKey, toEmail, code string) error {
 	from := os.Getenv("SMTP_FROM")
-	if from == "" {
-		from = "onboarding@resend.dev"
-	}
-
-	body := fmt.Sprintf(
-		`{"from":"AIS <%s>","to":["%s"],"subject":"Your AIS verification code","text":"Your verification code for Architecture Insight System:\n\n  %s\n\nThis code expires in 15 minutes."}`,
-		from, toEmail, code,
+	text := fmt.Sprintf(
+		"Your verification code for Architecture Insight System:\n\n  %s\n\nThis code expires in 15 minutes.",
+		code,
 	)
+	body := fmt.Sprintf(`{
+		"Messages":[{
+			"From":{"Email":%q,"Name":"AIS"},
+			"To":[{"Email":%q}],
+			"Subject":"Your AIS verification code",
+			"TextPart":%q
+		}]
+	}`, from, toEmail, text)
 
-	req, err := http.NewRequest("POST", "https://api.resend.com/emails", strings.NewReader(body))
+	req, err := http.NewRequest("POST", "https://api.mailjet.com/v3.1/send", strings.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("resend request: %w", err)
+		return fmt.Errorf("mailjet request: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.SetBasicAuth(apiKey, secretKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req)
 	if err != nil {
-		return fmt.Errorf("resend send: %w", err)
+		return fmt.Errorf("mailjet send: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
 		b, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("resend API %d: %s", resp.StatusCode, b)
+		return fmt.Errorf("mailjet API %d: %s", resp.StatusCode, b)
 	}
 	return nil
 }
