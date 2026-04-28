@@ -4,8 +4,36 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GraphData, GraphNode, GraphEdge } from '../../models/project.model';
-import { langColor, nodeRadius } from './graph.utils';
+import { langColor } from './graph.utils';
 import * as d3 from 'd3';
+
+const CARD_W = 168;
+const CARD_H = 58;
+const CARD_H_DIR = 68;
+const CARD_RX = 10;
+const ACCENT_W = 3;
+const PAD_LEFT = 36;
+
+function cardH(d: { type: string }): number {
+  return d.type === 'directory' ? CARD_H_DIR : CARD_H;
+}
+
+// Returns the point on the rect centered at (tx,ty) that faces (sx,sy)
+function rectEdgePoint(
+  sx: number, sy: number,
+  tx: number, ty: number,
+  tw: number, th: number
+): [number, number] {
+  const ddx = sx - tx;
+  const ddy = sy - ty;
+  if (!ddx && !ddy) return [tx, ty];
+  const hw = tw / 2;
+  const hh = th / 2;
+  const scaleX = ddx !== 0 ? hw / Math.abs(ddx) : Infinity;
+  const scaleY = ddy !== 0 ? hh / Math.abs(ddy) : Infinity;
+  const scale = Math.min(scaleX, scaleY);
+  return [tx + ddx * scale, ty + ddy * scale];
+}
 
 @Component({
   selector: 'app-graph',
@@ -84,71 +112,88 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
       .attr('height', height)
       .style('background', 'var(--bg)');
 
-    // Defs: arrow marker
+    // Defs
     const defs = svg.append('defs');
+
+    // Drop shadow for cards
+    const shadow = defs.append('filter')
+      .attr('id', 'card-shadow')
+      .attr('x', '-20%').attr('y', '-20%')
+      .attr('width', '140%').attr('height', '140%');
+    shadow.append('feDropShadow')
+      .attr('dx', 0).attr('dy', 3)
+      .attr('stdDeviation', 5)
+      .attr('flood-color', 'rgba(0,0,0,0.55)');
+
+    // Arrows
     defs.append('marker')
       .attr('id', 'arrow')
       .attr('viewBox', '0 -4 10 8')
-      .attr('refX', 20)
-      .attr('refY', 0)
-      .attr('markerWidth', 8)
-      .attr('markerHeight', 8)
+      .attr('refX', 10).attr('refY', 0)
+      .attr('markerWidth', 7).attr('markerHeight', 7)
       .attr('orient', 'auto')
-      .append('path')
-      .attr('d', 'M0,-4L10,0L0,4')
-      .attr('fill', '#58a6ff')
-      .attr('opacity', 0.7);
+      .append('path').attr('d', 'M0,-4L10,0L0,4')
+      .attr('fill', '#58a6ff').attr('opacity', 0.65);
+
+    defs.append('marker')
+      .attr('id', 'arrow-out')
+      .attr('viewBox', '0 -4 10 8')
+      .attr('refX', 10).attr('refY', 0)
+      .attr('markerWidth', 7).attr('markerHeight', 7)
+      .attr('orient', 'auto')
+      .append('path').attr('d', 'M0,-4L10,0L0,4')
+      .attr('fill', '#f0883e');
+
+    defs.append('marker')
+      .attr('id', 'arrow-in')
+      .attr('viewBox', '0 -4 10 8')
+      .attr('refX', 10).attr('refY', 0)
+      .attr('markerWidth', 7).attr('markerHeight', 7)
+      .attr('orient', 'auto')
+      .append('path').attr('d', 'M0,-4L10,0L0,4')
+      .attr('fill', '#3fb950');
 
     const g = svg.append('g');
 
-    // Zoom + pan
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.05, 6])
-      .on('zoom', (event) => g.attr('transform', event.transform.toString()));
+      .on('zoom', event => g.attr('transform', event.transform.toString()));
     svg.call(zoom);
     svg.on('dblclick.zoom', null);
 
-    // Add highlighted arrow marker
-    defs.append('marker')
-      .attr('id', 'arrow-active')
-      .attr('viewBox', '0 -4 10 8')
-      .attr('refX', 20)
-      .attr('refY', 0)
-      .attr('markerWidth', 8)
-      .attr('markerHeight', 8)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('d', 'M0,-4L10,0L0,4')
-      .attr('fill', '#f0883e');
-
-    // Edges
+    // Edges — dashed by default
     const link = g.append('g').attr('class', 'links')
       .selectAll('line')
       .data(edges)
       .join('line')
       .attr('stroke', '#58a6ff')
       .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.45)
+      .attr('stroke-opacity', 0.35)
+      .attr('stroke-dasharray', '5 4')
       .attr('marker-end', 'url(#arrow)');
 
-    // Selection state
     let selectedId: string | null = null;
+
+    const isConnected = (d: GraphNode) => connectedIds.has(d.id);
 
     const resetSelection = () => {
       selectedId = null;
       link
-        .attr('stroke', '#58a6ff')
-        .attr('stroke-width', 1.5)
-        .attr('stroke-opacity', 0.45)
+        .attr('stroke', '#58a6ff').attr('stroke-width', 1.5)
+        .attr('stroke-opacity', 0.35).attr('stroke-dasharray', '5 4')
         .attr('marker-end', 'url(#arrow)');
-      nodeG.select('circle.main-circle')
-        .attr('stroke-opacity', (d: any) => isConnected(d) ? 1 : 0.4)
-        .attr('fill-opacity', (d: any) => d.type === 'directory' ? 0.2 : isConnected(d) ? 0.9 : 0.5);
-      nodeG.select('text.node-label')
-        .attr('fill', (d: any) => isConnected(d) ? '#c9d1d9' : '#6e7681');
+      nodeG.select('rect.card-bg')
+        .attr('stroke-opacity', (d: any) => isConnected(d) ? 0.55 : 0.2)
+        .attr('fill-opacity', 1);
+      nodeG.select('rect.card-accent')
+        .attr('fill-opacity', (d: any) => isConnected(d) ? 0.85 : 0.35);
+      nodeG.select('text.card-name')
+        .attr('fill', (d: any) => isConnected(d) ? '#e6edf3' : '#8b949e');
+      nodeG.select('text.card-sub')
+        .attr('fill', '#6e7681');
     };
 
-    svg.on('click', (event) => {
+    svg.on('click', event => {
       if (event.target === svg.node() || (event.target as Element).tagName === 'svg') {
         resetSelection();
       }
@@ -173,85 +218,102 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
           })
       );
 
-    const radius = nodeRadius;
-
-    const isConnected = (d: GraphNode) => connectedIds.has(d.id);
-
-    // Shadow / glow for connected nodes
-    nodeG.filter(d => isConnected(d))
-      .append('circle')
-      .attr('r', d => radius(d) + 6)
-      .attr('fill', 'none')
-      .attr('stroke', d => langColor(d.language, d.type))
+    // Card background
+    nodeG.append('rect')
+      .attr('class', 'card-bg')
+      .attr('x', -CARD_W / 2)
+      .attr('y', (d: any) => -cardH(d) / 2)
+      .attr('width', CARD_W)
+      .attr('height', (d: any) => cardH(d))
+      .attr('rx', CARD_RX).attr('ry', CARD_RX)
+      .attr('fill', '#161b22')
+      .attr('stroke', (d: any) => langColor(d.language, d.type))
       .attr('stroke-width', 1)
-      .attr('stroke-opacity', 0.25);
+      .attr('stroke-opacity', (d: any) => isConnected(d) ? 0.55 : 0.2)
+      .attr('filter', 'url(#card-shadow)');
 
-    // Main circle
-    nodeG.append('circle')
-      .attr('class', 'main-circle')
-      .attr('r', radius)
-      .attr('fill', d => langColor(d.language, d.type))
-      .attr('fill-opacity', d => {
-        if (d.type === 'directory') return 0.2;
-        return isConnected(d) ? 0.9 : 0.5;
-      })
-      .attr('stroke', d => langColor(d.language, d.type))
-      .attr('stroke-width', d => d.type === 'directory' ? 2 : 1.5)
-      .attr('stroke-opacity', d => isConnected(d) ? 1 : 0.4);
+    // Left color accent bar
+    nodeG.append('rect')
+      .attr('class', 'card-accent')
+      .attr('x', -CARD_W / 2)
+      .attr('y', (d: any) => -cardH(d) / 2 + CARD_RX)
+      .attr('width', ACCENT_W)
+      .attr('height', (d: any) => cardH(d) - CARD_RX * 2)
+      .attr('rx', 1.5)
+      .attr('fill', (d: any) => langColor(d.language, d.type))
+      .attr('fill-opacity', (d: any) => isConnected(d) ? 0.85 : 0.35);
 
     // Directory icon
-    nodeG.filter(d => d.type === 'directory')
+    nodeG.filter((d: any) => d.type === 'directory')
       .append('text')
-      .attr('text-anchor', 'middle')
-      .attr('dy', '0.35em')
-      .attr('font-size', 13)
-      .attr('pointer-events', 'none')
+      .attr('x', -CARD_W / 2 + PAD_LEFT - 18)
+      .attr('y', -4).attr('dy', '0.35em')
+      .attr('font-size', 14).attr('pointer-events', 'none')
       .text('📁');
 
-    // Labels
-    nodeG.append('text')
-      .attr('class', 'node-label')
-      .attr('text-anchor', 'middle')
-      .attr('dy', d => radius(d) + 14)
-      .attr('font-size', d => d.type === 'directory' ? 12 : 11)
-      .attr('font-weight', d => d.type === 'directory' ? '600' : '400')
-      .attr('fill', d => isConnected(d) ? '#c9d1d9' : '#6e7681')
-      .attr('pointer-events', 'none')
-      .text(d => d.name.length > 22 ? d.name.slice(0, 20) + '…' : d.name);
+    // File language dot
+    nodeG.filter((d: any) => d.type === 'file')
+      .append('circle')
+      .attr('cx', -CARD_W / 2 + PAD_LEFT - 16)
+      .attr('cy', -9).attr('r', 4.5)
+      .attr('fill', (d: any) => langColor(d.language, d.type))
+      .attr('fill-opacity', 0.9).attr('pointer-events', 'none');
 
-    // Interaction
+    // Node name
+    nodeG.append('text')
+      .attr('class', 'card-name')
+      .attr('x', -CARD_W / 2 + PAD_LEFT)
+      .attr('y', (d: any) => d.type === 'file' ? -7 : -1)
+      .attr('dy', '0.35em')
+      .attr('font-size', 12).attr('font-weight', '600')
+      .attr('font-family', "'JetBrains Mono', 'Fira Code', monospace")
+      .attr('fill', (d: any) => isConnected(d) ? '#e6edf3' : '#8b949e')
+      .attr('pointer-events', 'none')
+      .text((d: any) => d.name.length > 17 ? d.name.slice(0, 15) + '…' : d.name);
+
+    // Subtitle
+    nodeG.filter((d: any) => d.type === 'file')
+      .append('text')
+      .attr('class', 'card-sub')
+      .attr('x', -CARD_W / 2 + PAD_LEFT)
+      .attr('y', 10).attr('dy', '0.35em')
+      .attr('font-size', 10)
+      .attr('font-family', "'JetBrains Mono', 'Fira Code', monospace")
+      .attr('fill', '#6e7681').attr('pointer-events', 'none')
+      .text((d: any) => `${d.language || 'file'} · ${d.lines ?? 0} lines`);
+
+    nodeG.filter((d: any) => d.type === 'directory')
+      .append('text')
+      .attr('class', 'card-sub')
+      .attr('x', -CARD_W / 2 + PAD_LEFT)
+      .attr('y', 16).attr('dy', '0.35em')
+      .attr('font-size', 10)
+      .attr('font-family', "'JetBrains Mono', 'Fira Code', monospace")
+      .attr('fill', '#6e7681').attr('pointer-events', 'none')
+      .text((d: any) => `${d.children ?? 0} items · double-click`);
+
+    // Interactions
     nodeG
       .on('mouseover', (event, d) => {
         this.zone.run(() => {
           const rect = container.getBoundingClientRect();
-          this.tooltip = {
-            visible: true,
-            x: event.clientX - rect.left + 14,
-            y: event.clientY - rect.top - 10,
-            node: d
-          };
+          this.tooltip = { visible: true, x: event.clientX - rect.left + 14, y: event.clientY - rect.top - 10, node: d };
         });
+        d3.select(event.currentTarget as SVGGElement).select('rect.card-bg').attr('fill', '#1c2128');
       })
-      .on('mousemove', (event) => {
+      .on('mousemove', event => {
         const rect = container.getBoundingClientRect();
-        this.zone.run(() => {
-          this.tooltip.x = event.clientX - rect.left + 14;
-          this.tooltip.y = event.clientY - rect.top - 10;
-        });
+        this.zone.run(() => { this.tooltip.x = event.clientX - rect.left + 14; this.tooltip.y = event.clientY - rect.top - 10; });
       })
-      .on('mouseout', () => {
+      .on('mouseout', event => {
         this.zone.run(() => { this.tooltip.visible = false; });
+        d3.select(event.currentTarget as SVGGElement).select('rect.card-bg').attr('fill', '#161b22');
       })
       .on('click', (event, d) => {
         event.stopPropagation();
-
-        if (selectedId === d.id) {
-          resetSelection();
-          return;
-        }
+        if (selectedId === d.id) { resetSelection(); return; }
         selectedId = d.id;
 
-        // Find directly connected node IDs
         const neighbors = new Set<string>([d.id]);
         edges.forEach((e: any) => {
           const srcId = typeof e.source === 'object' ? e.source.id : e.source;
@@ -260,40 +322,46 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
           if (tgtId === d.id) neighbors.add(srcId);
         });
 
-        // Highlight connected edges, dim others
         link
           .attr('stroke', (e: any) => {
             const srcId = typeof e.source === 'object' ? e.source.id : e.source;
             const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
-            if (srcId === d.id) return '#f0883e';   // outgoing: orange
-            if (tgtId === d.id) return '#3fb950';   // incoming: green
-            return '#30363d';
+            if (srcId === d.id) return '#f0883e';
+            if (tgtId === d.id) return '#3fb950';
+            return '#21262d';
           })
           .attr('stroke-width', (e: any) => {
             const srcId = typeof e.source === 'object' ? e.source.id : e.source;
             const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
-            return (srcId === d.id || tgtId === d.id) ? 2.5 : 1;
+            return (srcId === d.id || tgtId === d.id) ? 2 : 1;
           })
           .attr('stroke-opacity', (e: any) => {
             const srcId = typeof e.source === 'object' ? e.source.id : e.source;
             const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
-            return (srcId === d.id || tgtId === d.id) ? 0.9 : 0.08;
+            return (srcId === d.id || tgtId === d.id) ? 0.9 : 0.07;
+          })
+          .attr('stroke-dasharray', (e: any) => {
+            const srcId = typeof e.source === 'object' ? e.source.id : e.source;
+            const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
+            return (srcId === d.id || tgtId === d.id) ? 'none' : '5 4';
           })
           .attr('marker-end', (e: any) => {
             const srcId = typeof e.source === 'object' ? e.source.id : e.source;
-            return srcId === d.id ? 'url(#arrow-active)' : 'url(#arrow)';
+            const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
+            if (srcId === d.id) return 'url(#arrow-out)';
+            if (tgtId === d.id) return 'url(#arrow-in)';
+            return 'url(#arrow)';
           });
 
-        // Highlight neighbor nodes, dim others
-        nodeG.select('circle.main-circle')
-          .attr('fill-opacity', (n: any) => {
-            if (neighbors.has(n.id)) return n.type === 'directory' ? 0.35 : 1;
-            return 0.1;
-          })
-          .attr('stroke-opacity', (n: any) => neighbors.has(n.id) ? 1 : 0.15);
-
-        nodeG.select('text.node-label')
+        nodeG.select('rect.card-bg')
+          .attr('stroke-opacity', (n: any) => neighbors.has(n.id) ? 0.9 : 0.08)
+          .attr('fill-opacity', (n: any) => neighbors.has(n.id) ? 1 : 0.35);
+        nodeG.select('rect.card-accent')
+          .attr('fill-opacity', (n: any) => neighbors.has(n.id) ? 1 : 0.1);
+        nodeG.select('text.card-name')
           .attr('fill', (n: any) => neighbors.has(n.id) ? '#e6edf3' : '#3d444d');
+        nodeG.select('text.card-sub')
+          .attr('fill', (n: any) => neighbors.has(n.id) ? '#6e7681' : '#21262d');
       })
       .on('dblclick', (event, d) => {
         event.stopPropagation();
@@ -304,36 +372,26 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
         }
       });
 
-    // Force simulation
+    // Force simulation — wider spacing for card layout
     const linkForce = d3.forceLink<any, any>(edges)
       .id((d: any) => d.id)
-      .distance(160)
-      .strength(0.6);
+      .distance(240)
+      .strength(0.5);
 
     this.simulation = d3.forceSimulation(nodes)
       .force('link', linkForce)
-      .force('charge', d3.forceManyBody().strength(-600).distanceMax(500))
+      .force('charge', d3.forceManyBody().strength(-900).distanceMax(600))
       .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
       .force('x', d3.forceX(width / 2).strength(0.06))
       .force('y', d3.forceY(height / 2).strength(0.06))
-      .force('collision', d3.forceCollide().radius((d: any) => radius(d) + 22))
+      .force('collision', d3.forceCollide().radius(CARD_W / 2 + 24))
       .alphaDecay(0.02)
       .on('tick', () => {
         link
-          .attr('x1', (d: any) => d.source.x)
-          .attr('y1', (d: any) => d.source.y)
-          .attr('x2', (d: any) => {
-            const dx = d.target.x - d.source.x;
-            const dy = d.target.y - d.source.y;
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            return d.target.x - (dx / dist) * radius(d.target);
-          })
-          .attr('y2', (d: any) => {
-            const dx = d.target.x - d.source.x;
-            const dy = d.target.y - d.source.y;
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            return d.target.y - (dy / dist) * radius(d.target);
-          });
+          .attr('x1', (e: any) => rectEdgePoint(e.target.x, e.target.y, e.source.x, e.source.y, CARD_W, cardH(e.source))[0])
+          .attr('y1', (e: any) => rectEdgePoint(e.target.x, e.target.y, e.source.x, e.source.y, CARD_W, cardH(e.source))[1])
+          .attr('x2', (e: any) => rectEdgePoint(e.source.x, e.source.y, e.target.x, e.target.y, CARD_W, cardH(e.target))[0])
+          .attr('y2', (e: any) => rectEdgePoint(e.source.x, e.source.y, e.target.x, e.target.y, CARD_W, cardH(e.target))[1]);
         nodeG.attr('transform', (d: any) => `translate(${d.x ?? 0},${d.y ?? 0})`);
       });
   }
