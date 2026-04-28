@@ -41,6 +41,10 @@
         <span class="sp-num">{{ stats.totalLines | number }}</span>
         <span class="sp-label">lines</span>
       </div>
+      <div class="sp-counter" [class.sp-counter-cycle]="stats.cycleCount > 0">
+        <span class="sp-num">{{ stats.cycleCount }}</span>
+        <span class="sp-label">cycles</span>
+      </div>
     </div>
 
     <div class="sp-section-title">Languages</div>

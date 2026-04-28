@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { MarkdownPipe } from './markdown.pipe';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,7 +13,7 @@ interface Message {
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MarkdownPipe],
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.css']
 })

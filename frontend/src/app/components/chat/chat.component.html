@@ -15,7 +15,8 @@
         <span *ngIf="msg.loading" class="typing">
           <span></span><span></span><span></span>
         </span>
-        <span *ngIf="!msg.loading" class="msg-text">{{ msg.content }}</span>
+        <span *ngIf="!msg.loading && msg.role === 'user'" class="msg-text">{{ msg.content }}</span>
+        <div *ngIf="!msg.loading && msg.role === 'assistant'" class="msg-text md-body" [innerHTML]="msg.content | markdown"></div>
       </div>
     </div>
   </div>

@@ -20,6 +20,7 @@ interface ProjectStats {
   totalDirs: number;
   totalLines: number;
   totalDeps: number;
+  cycleCount: number;
   languages: LangStat[];
   topFiles: { name: string; path: string; lines: number }[];
 }
@@ -71,6 +72,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
   tooltip = { visible: false, x: 0, y: 0, node: null as GraphNode | null };
   showStats = false;
   stats: ProjectStats | null = null;
+  private cycleEdgeKeys = new Set<string>();
   private simulation: d3.Simulation<any, any> | null = null;
   private initialized = false;
   private resizeObserver: ResizeObserver | null = null;
@@ -98,7 +100,42 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.resizeObserver?.disconnect();
   }
 
+  private detectCycles(): void {
+    this.cycleEdgeKeys.clear();
+    const adj = new Map<string, string[]>();
+    for (const e of this.graph.edges) {
+      const src = e.source as string;
+      const tgt = e.target as string;
+      if (!adj.has(src)) adj.set(src, []);
+      adj.get(src)!.push(tgt);
+    }
+
+    const visited = new Set<string>();
+    const visiting = new Set<string>();
+
+    const dfs = (node: string): void => {
+      visiting.add(node);
+      for (const neighbor of adj.get(node) ?? []) {
+        if (visiting.has(neighbor)) {
+          this.cycleEdgeKeys.add(`${node}->${neighbor}`);
+        } else if (!visited.has(neighbor)) {
+          dfs(neighbor);
+        }
+      }
+      visiting.delete(node);
+      visited.add(node);
+    };
+
+    const allNodes = new Set(
+      this.graph.edges.flatMap(e => [e.source as string, e.target as string])
+    );
+    for (const node of allNodes) {
+      if (!visited.has(node)) dfs(node);
+    }
+  }
+
   private computeStats() {
+    this.detectCycles();
     const files = this.graph.nodes.filter(n => n.type === 'file');
     const dirs = this.graph.nodes.filter(n => n.type === 'directory');
     const totalLines = files.reduce((s, n) => s + (n.lines || 0), 0);
@@ -129,6 +166,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
       totalDirs: dirs.length,
       totalLines,
       totalDeps: this.graph.edges.length,
+      cycleCount: this.cycleEdgeKeys.size,
       languages,
       topFiles,
     };
@@ -191,9 +229,18 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
 
     // Build valid edges (only between nodes that exist)
     const nodeById = new Map(nodes.map(n => [n.id, n]));
-    const edges: (GraphEdge & d3.SimulationLinkDatum<any>)[] = this.graph.edges
+    const edges: (GraphEdge & d3.SimulationLinkDatum<any> & { _key: string })[] = this.graph.edges
       .filter(e => nodeById.has(e.source as string) && nodeById.has(e.target as string))
-      .map(e => ({ ...e }));
+      .map(e => ({ ...e, _key: `${e.source as string}->${e.target as string}` }));
+
+    const isCycleEdge = (e: any): boolean => {
+      const key = e._key ?? (() => {
+        const s = typeof e.source === 'object' ? (e.source as any).id : e.source;
+        const t = typeof e.target === 'object' ? (e.target as any).id : e.target;
+        return `${s}->${t}`;
+      })();
+      return this.cycleEdgeKeys.has(key);
+    };
 
     // Track which nodes have connections
     const connectedIds = new Set<string>();
@@ -248,6 +295,15 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
       .append('path').attr('d', 'M0,-4L10,0L0,4')
       .attr('fill', '#3fb950');
 
+    defs.append('marker')
+      .attr('id', 'arrow-cycle')
+      .attr('viewBox', '0 -4 10 8')
+      .attr('refX', 10).attr('refY', 0)
+      .attr('markerWidth', 7).attr('markerHeight', 7)
+      .attr('orient', 'auto')
+      .append('path').attr('d', 'M0,-4L10,0L0,4')
+      .attr('fill', '#f85149');
+
     const g = svg.append('g');
 
     const zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -256,16 +312,16 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
     svg.call(zoom);
     svg.on('dblclick.zoom', null);
 
-    // Edges — dashed by default
+    // Edges — cycle edges in red, others dashed blue
     const link = g.append('g').attr('class', 'links')
       .selectAll('line')
       .data(edges)
       .join('line')
-      .attr('stroke', '#58a6ff')
-      .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.35)
-      .attr('stroke-dasharray', '5 4')
-      .attr('marker-end', 'url(#arrow)');
+      .attr('stroke', (e: any) => isCycleEdge(e) ? '#f85149' : '#58a6ff')
+      .attr('stroke-width', (e: any) => isCycleEdge(e) ? 2 : 1.5)
+      .attr('stroke-opacity', (e: any) => isCycleEdge(e) ? 0.75 : 0.35)
+      .attr('stroke-dasharray', (e: any) => isCycleEdge(e) ? 'none' : '5 4')
+      .attr('marker-end', (e: any) => isCycleEdge(e) ? 'url(#arrow-cycle)' : 'url(#arrow)');
 
     let selectedId: string | null = null;
 
@@ -274,9 +330,11 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
     const resetSelection = () => {
       selectedId = null;
       link
-        .attr('stroke', '#58a6ff').attr('stroke-width', 1.5)
-        .attr('stroke-opacity', 0.35).attr('stroke-dasharray', '5 4')
-        .attr('marker-end', 'url(#arrow)');
+        .attr('stroke', (e: any) => isCycleEdge(e) ? '#f85149' : '#58a6ff')
+        .attr('stroke-width', (e: any) => isCycleEdge(e) ? 2 : 1.5)
+        .attr('stroke-opacity', (e: any) => isCycleEdge(e) ? 0.75 : 0.35)
+        .attr('stroke-dasharray', (e: any) => isCycleEdge(e) ? 'none' : '5 4')
+        .attr('marker-end', (e: any) => isCycleEdge(e) ? 'url(#arrow-cycle)' : 'url(#arrow)');
       nodeG.select('rect.card-bg')
         .attr('stroke-opacity', (d: any) => isConnected(d) ? 0.55 : 0.2)
         .attr('fill-opacity', 1);
@@ -423,28 +481,32 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
             const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
             if (srcId === d.id) return '#f0883e';
             if (tgtId === d.id) return '#3fb950';
+            if (isCycleEdge(e)) return '#f85149';
             return '#21262d';
           })
           .attr('stroke-width', (e: any) => {
             const srcId = typeof e.source === 'object' ? e.source.id : e.source;
             const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
-            return (srcId === d.id || tgtId === d.id) ? 2 : 1;
+            return (srcId === d.id || tgtId === d.id) ? 2 : 1.5;
           })
           .attr('stroke-opacity', (e: any) => {
             const srcId = typeof e.source === 'object' ? e.source.id : e.source;
             const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
-            return (srcId === d.id || tgtId === d.id) ? 0.9 : 0.07;
+            if (srcId === d.id || tgtId === d.id) return 0.9;
+            if (isCycleEdge(e)) return 0.4;
+            return 0.07;
           })
           .attr('stroke-dasharray', (e: any) => {
             const srcId = typeof e.source === 'object' ? e.source.id : e.source;
             const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
-            return (srcId === d.id || tgtId === d.id) ? 'none' : '5 4';
+            return (srcId === d.id || tgtId === d.id || isCycleEdge(e)) ? 'none' : '5 4';
           })
           .attr('marker-end', (e: any) => {
             const srcId = typeof e.source === 'object' ? e.source.id : e.source;
             const tgtId = typeof e.target === 'object' ? e.target.id : e.target;
             if (srcId === d.id) return 'url(#arrow-out)';
             if (tgtId === d.id) return 'url(#arrow-in)';
+            if (isCycleEdge(e)) return 'url(#arrow-cycle)';
             return 'url(#arrow)';
           });
 

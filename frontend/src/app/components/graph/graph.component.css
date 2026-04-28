@@ -145,6 +145,8 @@
   border-right: 1px solid var(--border);
 }
 .sp-counter:last-child { border-right: none; }
+.sp-counter-cycle .sp-num { color: var(--red); }
+.sp-counter-cycle .sp-label { color: var(--red); opacity: 0.8; }
 
 .sp-num {
   font-size: 17px;
