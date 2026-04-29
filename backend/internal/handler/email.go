@@ -12,10 +12,49 @@ import (
 )
 
 func sendVerificationEmail(toEmail, code string) error {
+	if key := os.Getenv("BREVO_API_KEY"); key != "" {
+		return sendViaBrevo(key, toEmail, code)
+	}
 	if key := os.Getenv("RESEND_API_KEY"); key != "" {
 		return sendViaResend(key, toEmail, code)
 	}
 	return sendViaSMTP(toEmail, code)
+}
+
+func sendViaBrevo(apiKey, toEmail, code string) error {
+	from := os.Getenv("SMTP_FROM")
+	if from == "" {
+		from = "noreply@ais.app"
+	}
+	text := fmt.Sprintf(
+		"Your verification code for Architecture Insight System:\n\n  %s\n\nThis code expires in 15 minutes.",
+		code,
+	)
+	body := fmt.Sprintf(`{
+		"sender":{"email":%q,"name":"AIS"},
+		"to":[{"email":%q}],
+		"subject":"Your AIS verification code",
+		"textContent":%q
+	}`, from, toEmail, text)
+
+	req, err := http.NewRequest("POST", "https://api.brevo.com/v3/smtp/email", strings.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("brevo request: %w", err)
+	}
+	req.Header.Set("api-key", apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req)
+	if err != nil {
+		return fmt.Errorf("brevo send: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("brevo API %d: %s", resp.StatusCode, b)
+	}
+	return nil
 }
 
 func sendViaResend(apiKey, toEmail, code string) error {
