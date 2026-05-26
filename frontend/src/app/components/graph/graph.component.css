@@ -252,3 +252,124 @@
   color: var(--text3);
   flex-shrink: 0;
 }
+
+.sp-counter-dead .sp-num { color: #d29922; }
+.sp-counter-dead .sp-label { color: #d29922; opacity: 0.8; }
+
+/* ── Dead code button variant ── */
+.ctrl-btn-dead.active {
+  color: #d29922;
+  border-color: #d29922;
+  background: rgba(210, 153, 34, 0.08);
+}
+
+.dc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #d29922;
+  color: #0d1117;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 8px;
+  margin-left: 2px;
+}
+
+/* ── Dead Code panel (bottom-right) ── */
+.dead-panel {
+  position: absolute;
+  bottom: 48px;
+  right: 12px;
+  width: 272px;
+  max-height: 420px;
+  background: var(--bg2);
+  border: 1px solid #d29922;
+  border-radius: 10px;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(210,153,34,0.12);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dead-title {
+  color: #d29922 !important;
+  display: flex;
+  align-items: center;
+}
+
+.dc-summary {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dc-clean {
+  font-size: 11px;
+  color: #3fb950;
+}
+
+.dc-count-label {
+  font-size: 11px;
+  color: #d29922;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dc-list {
+  overflow-y: auto;
+  max-height: 240px;
+  padding: 4px 0;
+}
+
+.dc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 14px;
+  transition: background 0.12s;
+}
+
+.dc-item:hover {
+  background: var(--bg3);
+}
+
+.dc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.dc-item-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dc-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e3b341;
+  font-family: 'JetBrains Mono', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dc-meta {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 1px;
+}
+
+.dc-hint {
+  padding: 8px 14px 10px;
+  font-size: 10px;
+  color: var(--text3);
+  line-height: 1.5;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}

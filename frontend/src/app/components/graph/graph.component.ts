@@ -1,6 +1,6 @@
 import {
   Component, Input, Output, EventEmitter, OnChanges, SimpleChanges,
-  ElementRef, ViewChild, AfterViewInit, NgZone, OnDestroy
+  ElementRef, ViewChild, AfterViewInit, NgZone, OnDestroy, ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GraphData, GraphNode, GraphEdge } from '../../models/project.model';
@@ -23,6 +23,7 @@ interface ProjectStats {
   cycleCount: number;
   languages: LangStat[];
   topFiles: { name: string; path: string; lines: number }[];
+  deadCount: number;
 }
 
 const CARD_W = 168;
@@ -64,6 +65,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() graph: GraphData = { nodes: [], edges: [] };
   @Input() currentPath = '';
   @Input() projectName = '';
+  @Input() deadCodeIds = new Set<string>();
   @Output() drillDown = new EventEmitter<GraphNode>();
   @Output() fileSelect = new EventEmitter<GraphNode>();
 
@@ -71,13 +73,24 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   tooltip = { visible: false, x: 0, y: 0, node: null as GraphNode | null };
   showStats = false;
+  showDeadCode = false;
   stats: ProjectStats | null = null;
   private cycleEdgeKeys = new Set<string>();
   private simulation: d3.Simulation<any, any> | null = null;
   private initialized = false;
   private resizeObserver: ResizeObserver | null = null;
+  private nodeGSel: any = null;
+  private connectedIdsSaved = new Set<string>();
 
-  constructor(private zone: NgZone) {}
+  constructor(private zone: NgZone, private cdr: ChangeDetectorRef) {}
+
+  get deadCodeCount(): number {
+    return this.deadCodeIds.size;
+  }
+
+  get visibleDeadCodeNodes(): GraphNode[] {
+    return this.graph.nodes.filter(n => n.type === 'file' && this.deadCodeIds.has(n.id));
+  }
 
   ngAfterViewInit() {
     this.initialized = true;
@@ -92,6 +105,8 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
     if (changes['graph']) this.computeStats();
     if (this.initialized && (changes['graph'] || changes['currentPath'])) {
       this.renderGraph();
+    } else if (this.initialized && changes['deadCodeIds'] && this.showDeadCode) {
+      this.applyDeadCodeStyles();
     }
   }
 
@@ -169,6 +184,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
       cycleCount: this.cycleEdgeKeys.size,
       languages,
       topFiles,
+      deadCount: this.deadCodeCount,
     };
   }
 
@@ -210,6 +226,48 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
     img.src = url;
   }
 
+  toggleDeadCode() {
+    this.showDeadCode = !this.showDeadCode;
+    if (this.showDeadCode) this.showStats = false;
+    this.applyDeadCodeStyles();
+  }
+
+  private applyDeadCodeStyles() {
+    if (!this.nodeGSel) return;
+    if (this.showDeadCode) {
+      this.nodeGSel.select('rect.card-bg')
+        .attr('stroke', (d: any) => this.deadCodeIds.has(d.id) ? '#d29922' : langColor(d.language, d.type))
+        .attr('stroke-width', (d: any) => this.deadCodeIds.has(d.id) ? 2 : 1)
+        .attr('stroke-opacity', (d: any) => this.deadCodeIds.has(d.id) ? 0.9 : 0.08)
+        .attr('stroke-dasharray', (d: any) => this.deadCodeIds.has(d.id) ? '5 3' : 'none');
+      this.nodeGSel.select('rect.card-accent')
+        .attr('fill', (d: any) => this.deadCodeIds.has(d.id) ? '#d29922' : langColor(d.language, d.type))
+        .attr('fill-opacity', (d: any) => this.deadCodeIds.has(d.id) ? 0.9 : 0.12);
+      this.nodeGSel.select('text.card-name')
+        .attr('fill', (d: any) => this.deadCodeIds.has(d.id) ? '#e3b341' : '#3d444d');
+      this.nodeGSel.select('text.card-sub')
+        .attr('fill', (d: any) => this.deadCodeIds.has(d.id) ? '#9e7200' : '#21262d');
+      this.nodeGSel.select('circle')
+        .attr('fill', (d: any) => this.deadCodeIds.has(d.id) ? '#d29922' : langColor(d.language, d.type));
+    } else {
+      const isConn = (d: any) => this.connectedIdsSaved.has(d.id);
+      this.nodeGSel.select('rect.card-bg')
+        .attr('stroke', (d: any) => langColor(d.language, d.type))
+        .attr('stroke-width', 1)
+        .attr('stroke-opacity', (d: any) => isConn(d) ? 0.55 : 0.2)
+        .attr('stroke-dasharray', 'none');
+      this.nodeGSel.select('rect.card-accent')
+        .attr('fill', (d: any) => langColor(d.language, d.type))
+        .attr('fill-opacity', (d: any) => isConn(d) ? 0.85 : 0.35);
+      this.nodeGSel.select('text.card-name')
+        .attr('fill', (d: any) => isConn(d) ? '#e6edf3' : '#8b949e');
+      this.nodeGSel.select('text.card-sub')
+        .attr('fill', '#6e7681');
+      this.nodeGSel.select('circle')
+        .attr('fill', (d: any) => langColor(d.language, d.type));
+    }
+  }
+
   private renderGraph() {
     const container = this.svgContainer?.nativeElement;
     if (!container) return;
@@ -248,6 +306,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
       connectedIds.add(e.source as string);
       connectedIds.add(e.target as string);
     });
+    this.connectedIdsSaved = connectedIds;
 
     const svg = d3.select(container).append('svg')
       .attr('width', width)
@@ -352,7 +411,7 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
       }
     });
 
-    // Node groups
+    // Node groups — saved for dead code highlight updates
     const nodeG = g.append('g').attr('class', 'nodes')
       .selectAll<SVGGElement, typeof nodes[0]>('g')
       .data(nodes)
@@ -551,6 +610,9 @@ export class GraphComponent implements OnChanges, AfterViewInit, OnDestroy {
           .attr('y2', (e: any) => rectEdgePoint(e.source.x, e.source.y, e.target.x, e.target.y, CARD_W, cardH(e.target))[1]);
         nodeG.attr('transform', (d: any) => `translate(${d.x ?? 0},${d.y ?? 0})`);
       });
+
+    this.nodeGSel = nodeG;
+    if (this.showDeadCode) this.applyDeadCodeStyles();
   }
 
   private renderEmpty(container: HTMLElement, width: number, height: number) {

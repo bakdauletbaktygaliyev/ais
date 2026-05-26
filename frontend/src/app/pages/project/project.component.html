@@ -59,6 +59,7 @@
         [graph]="graph"
         [currentPath]="currentPath"
         [projectName]="project?.name ?? ''"
+        [deadCodeIds]="deadCodeIds"
         (drillDown)="onNodeDrillDown($event)"
         (fileSelect)="onFileSelect($event)"
       ></app-graph>

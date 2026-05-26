@@ -3,11 +3,18 @@
 
   <!-- Controls: top-right -->
   <div class="graph-controls" *ngIf="graph.nodes.length > 0">
-    <button class="ctrl-btn" (click)="showStats = !showStats" [class.active]="showStats" title="Project statistics">
+    <button class="ctrl-btn" (click)="showStats = !showStats; showDeadCode = false" [class.active]="showStats" title="Project statistics">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
         <path d="M1 11h2v3H1v-3zm4-4h2v7H5V7zm4-3h2v10H9V4zm4-3h2v13h-2V1z"/>
       </svg>
       Stats
+    </button>
+    <button class="ctrl-btn ctrl-btn-dead" (click)="toggleDeadCode()" [class.active]="showDeadCode" title="Dead code analysis">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M4.72.72a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06L6 3.06V8.5a.75.75 0 0 1-1.5 0V3.06L1.28 6.28a.75.75 0 0 1-1.06-1.06l4.5-4.5ZM1.5 13.25a.75.75 0 0 0 0 1.5h13a.75.75 0 0 0 0-1.5h-13Z" transform="translate(0,1)"/>
+      </svg>
+      Dead Code
+      <span class="dc-badge" *ngIf="deadCodeCount > 0">{{ deadCodeCount }}</span>
     </button>
     <button class="ctrl-btn" (click)="exportPng()" title="Export graph as PNG">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
@@ -45,6 +52,10 @@
         <span class="sp-num">{{ stats.cycleCount }}</span>
         <span class="sp-label">cycles</span>
       </div>
+      <div class="sp-counter" [class.sp-counter-dead]="stats.deadCount > 0">
+        <span class="sp-num">{{ stats.deadCount }}</span>
+        <span class="sp-label">dead</span>
+      </div>
     </div>
 
     <div class="sp-section-title">Languages</div>
@@ -65,6 +76,44 @@
         <span class="sp-file-name" [title]="f.path">{{ f.name }}</span>
         <span class="sp-file-lines">{{ f.lines | number }}</span>
       </div>
+    </div>
+  </div>
+
+  <!-- Dead Code panel: bottom-right -->
+  <div class="dead-panel" *ngIf="showDeadCode">
+    <div class="sp-header">
+      <span class="sp-title dead-title">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="#d29922" style="margin-right:5px;vertical-align:-1px">
+          <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/>
+        </svg>
+        Dead Code
+      </span>
+      <button class="sp-close" (click)="toggleDeadCode()">×</button>
+    </div>
+
+    <div class="dc-summary" *ngIf="deadCodeCount === 0">
+      <span class="dc-clean">✓ No dead code detected in current view</span>
+    </div>
+
+    <div class="dc-summary" *ngIf="deadCodeCount > 0">
+      <span class="dc-count-label">{{ deadCodeCount }} unreachable file{{ deadCodeCount === 1 ? '' : 's' }} (project-wide)</span>
+    </div>
+
+    <ng-container *ngIf="visibleDeadCodeNodes.length > 0">
+      <div class="sp-section-title">In current view</div>
+      <div class="dc-list">
+        <div class="dc-item" *ngFor="let n of visibleDeadCodeNodes">
+          <span class="dc-dot" [style.background]="'#d29922'"></span>
+          <div class="dc-item-body">
+            <span class="dc-name" [title]="n.path">{{ n.name }}</span>
+            <span class="dc-meta">{{ n.language || 'file' }} · {{ n.lines }} lines</span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="dc-hint">
+      Files with no incoming imports.<br>Entry points and tests are excluded.
     </div>
   </div>
 

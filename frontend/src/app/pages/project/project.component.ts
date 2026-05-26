@@ -18,6 +18,7 @@ import { FileViewerComponent } from '../../components/file-viewer/file-viewer.co
 export class ProjectComponent implements OnInit, OnDestroy {
   project: Project | null = null;
   graph: GraphData = { nodes: [], edges: [] };
+  deadCodeIds = new Set<string>();
   currentPath = '';
   breadcrumbs: string[] = [];
   chatOpen = false;
@@ -43,7 +44,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (p) => {
         this.project = p;
-        if (p.status === 'done') { this.loading = false; this.loadGraph(); }
+        if (p.status === 'done') { this.loading = false; this.loadGraph(); this.loadDeadCode(); }
         else if (p.status === 'error') { this.loading = false; }
       },
       error: () => { this.loading = false; }
@@ -52,7 +53,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
     this.api.getProject(id).subscribe({
       next: (p) => {
         this.project = p;
-        if (p.status === 'done') { this.loading = false; this.loadGraph(); }
+        if (p.status === 'done') { this.loading = false; this.loadGraph(); this.loadDeadCode(); }
         else if (p.status === 'error') { this.loading = false; }
       }
     });
@@ -64,6 +65,14 @@ export class ProjectComponent implements OnInit, OnDestroy {
     if (!this.project) return;
     this.api.getGraph(this.project.id, this.currentPath || undefined).subscribe({
       next: (g) => this.graph = g,
+      error: () => {}
+    });
+  }
+
+  loadDeadCode() {
+    if (!this.project) return;
+    this.api.getDeadCode(this.project.id).subscribe({
+      next: (nodes) => { this.deadCodeIds = new Set(nodes.map(n => n.id)); },
       error: () => {}
     });
   }

@@ -58,6 +58,7 @@ func main() {
 		api.GET("/projects/:id", h.GetProject)
 		api.GET("/projects/:id/graph", h.GetGraph)
 		api.GET("/projects/:id/file", h.GetFile)
+		api.GET("/projects/:id/dead-code", h.GetDeadCode)
 		api.DELETE("/projects/:id", h.DeleteProject)
 	}
 

@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ChatResponse, GraphData, Project } from '../models/project.model';
+import { ChatResponse, DeadCodeNode, GraphData, Project } from '../models/project.model';
 
-export type { Project, GraphNode, GraphEdge, GraphData, ChatResponse } from '../models/project.model';
+export type { Project, GraphNode, GraphEdge, GraphData, ChatResponse, DeadCodeNode } from '../models/project.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -43,6 +43,10 @@ export class ApiService {
     return this.http.get<{ path: string; content: string }>(
       `${this.api}/projects/${projectId}/file?path=${encodeURIComponent(path)}`
     );
+  }
+
+  getDeadCode(id: string): Observable<DeadCodeNode[]> {
+    return this.http.get<DeadCodeNode[]>(`${this.api}/projects/${id}/dead-code`);
   }
 
   chat(projectId: string, question: string, currentPath: string): Observable<ChatResponse> {

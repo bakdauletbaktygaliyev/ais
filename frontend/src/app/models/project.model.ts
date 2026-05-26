@@ -33,3 +33,11 @@ export interface GraphData {
 export interface ChatResponse {
   answer: string;
 }
+
+export interface DeadCodeNode {
+  id: string;
+  name: string;
+  path: string;
+  language: string;
+  lines: number;
+}
