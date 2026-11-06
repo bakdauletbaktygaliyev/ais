@@ -1,0 +1,117 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">AIS</span>
+    </div>
+
+    <!-- Step 1: Registration form -->
+    <ng-container *ngIf="step === 'form'">
+      <h1>Create account</h1>
+      <p class="subtitle">Start exploring your architecture</p>
+
+      <form (ngSubmit)="submitForm()" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            [disabled]="loading"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            [(ngModel)]="password"
+            name="password"
+            placeholder="Minimum 8 characters"
+            autocomplete="new-password"
+            [disabled]="loading"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="confirm">Confirm password</label>
+          <input
+            id="confirm"
+            type="password"
+            [(ngModel)]="confirm"
+            name="confirm"
+            placeholder="Repeat password"
+            autocomplete="new-password"
+            [class.input-error]="passwordMismatch"
+            [disabled]="loading"
+            required
+          />
+          <span class="field-error" *ngIf="passwordMismatch">Passwords do not match</span>
+        </div>
+
+        <div class="error-msg" *ngIf="error">{{ error }}</div>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="loading || !email || !password || !confirm || passwordMismatch"
+        >
+          <span *ngIf="!loading">Continue</span>
+          <span *ngIf="loading" class="spinner"></span>
+        </button>
+      </form>
+
+      <p class="switch-link">Already have an account? <a routerLink="/login">Sign in</a></p>
+    </ng-container>
+
+    <!-- Step 2: Email verification -->
+    <ng-container *ngIf="step === 'verify'">
+      <div class="verify-icon">✉</div>
+      <h1>Check your email</h1>
+      <p class="subtitle">
+        We sent a 6-digit code to<br>
+        <strong>{{ email }}</strong>
+      </p>
+
+      <form (ngSubmit)="submitCode()" novalidate>
+        <div class="field">
+          <label for="code">Verification code</label>
+          <input
+            id="code"
+            type="text"
+            [(ngModel)]="code"
+            name="code"
+            placeholder="000000"
+            maxlength="6"
+            autocomplete="one-time-code"
+            class="code-input"
+            [disabled]="loading"
+            required
+          />
+        </div>
+
+        <div class="error-msg" *ngIf="error">{{ error }}</div>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="loading || code.length !== 6"
+        >
+          <span *ngIf="!loading">Verify</span>
+          <span *ngIf="loading" class="spinner"></span>
+        </button>
+      </form>
+
+      <p class="switch-link">
+        Didn't receive it?
+        <a (click)="resend()" style="cursor:pointer">Resend code</a>
+      </p>
+    </ng-container>
+  </div>
+</div>
